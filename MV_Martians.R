@@ -48,6 +48,7 @@ ufo$duration.seconds
 summary(ufo$duration.seconds)
 str(ufo$duration.seconds)
 boxplot(ufo$duration.seconds)
+
 #find IQR for duration.seconds and remove outliers 
 Q1 <- quantile(ufo$duration.seconds, .25)
 
@@ -56,3 +57,41 @@ Q3 <- quantile(ufo$duration.seconds, .75)
 IQR <- IQR(ufo$duration.seconds)
 
 ufo <- subset(ufo, ufo$duration.seconds > (Q1 - 1.5*IQR) & ufo$duration.seconds < (Q3 + 1.5*IQR))
+
+#####6. NUFORC officials comment on sightings that may be hoax. Identify the best way to identify and remove these sightings from the dataset.
+#identify and remove rows with "hoax" or "HOAX"
+str_view(ufo$comments, pattern = "HOAX") #can see HOAX
+str_view(ufo$comments, pattern = "HOAX") #can see hoax
+ufo <- ufo[- grep("HOAX", ufo$comments, ignore.case = T),] #find and remove from ufo instances of HOAX from the ufo$comments coloumn, ignore.case will check for hoax we as well, 
+str_view(ufo$comments, pattern = "HOAX") #nothing shows up and HOAX/hoax have been removed
+
+####7. Add another column to the dataset (report_delay) and populate with the time difference in days, between the date of the sighting and the date it was reported.
+ufo$date_posted #format is DD-MM-YY
+ufo$date_sighting #format is YY-MM-DD
+
+library(lubridate)
+ufo$date_posted <- dmy(ufo$date_posted) #convert dates from D/M/Y to Y/M/D
+
+ufo$date_posted <- as.Date(ufo$date_posted) #ensure these are stored as dates
+ufo$date_sighting <- as.Date(ufo$date_sighting)
+
+ufo$report_delay <- ufo$date_posted - ufo$date_sighting #subtract date_posted and date_sighting, save results in report_delay
+ufo$report_delay #can now see reporting delay in days
+
+#Remove the rows where the sighting was reported before it happened. i.e. any negative values 
+grep("-[1:9]", ufo$report_delay) #here we can see index 5990 and 17244 has negative days
+ufo <- ufo[- grep("-[1:9]", ufo$report_delay),] #remove these
+grep("-[1:9]", ufo$report_delay) #now this will return nothing as they have been removed
+
+#### 8. Create a table with the average report_delay per country.
+
+library(dplyr)
+
+country_delay <- ufo %>% 
+  group_by(country) %>% 
+  summarise(avg_reported_delay = mean(report_delay, na.rm = TRUE))
+country_delay
+
+####9. Create a histogram using the 'duration seconds' column.
+ufo$duration.seconds
+hist(ufo$duration.seconds, main = "Duration of UFO sightings in seconds", xlab = "Seconds")
